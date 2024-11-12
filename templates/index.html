@@ -4,16 +4,145 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rubbish Classification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 20px 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 400px;
+        }
+        h1 {
+            color: #5d9cec;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        .form-group {
+            margin: 20px 0;
+        }
+        input[type="file"] {
+            display: block;
+            margin: 10px auto;
+            padding: 5px;
+        }
+        button {
+            background-color: #5d9cec;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #4a8acb;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e1f5fe;
+            border-radius: 8px;
+            color: #31708f;
+            font-weight: bold;
+        }
+        .real-time-result {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+            font-style: italic;
+        }
+        video {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Rubbish Classification</h1>
-    <form action="/predict" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept="image/*" required>
-        <button type="submit">Upload and Predict</button>
-    </form>
+    <div class="container">
+        <h1>Rubbish Classification</h1>
 
-    {% if result %}
-        <h2>Result: {{ result }}</h2>
-    {% endif %}
+        <!-- Form upload ảnh để phân loại -->
+        <div class="form-group">
+            <form action="/predict" method="post" enctype="multipart/form-data">
+                <input type="file" name="file" accept="image/*" required>
+                <button type="submit">Upload and Predict</button>
+            </form>
+        </div>
+
+        <!-- Kết quả phân loại từ ảnh upload -->
+        {% if result %}
+            <div class="result">
+                Result from Uploaded Image: {{ result }}
+            </div>
+        {% endif %}
+
+        <!-- Kết quả phân loại theo thời gian thực từ camera -->
+        <div class="real-time-result">
+            <h2>Real-time Classification from Camera:</h2>
+            <p>{{ latest_result }}</p>
+        </div>
+
+        <!-- Video stream from camera -->
+        <video id="videoElement" autoplay></video>
+
+        <!-- Nút chụp ảnh và phân loại -->
+        <button id="captureButton">Capture and Classify</button>
+        <canvas id="canvas" style="display: none;"></canvas>
+    </div>
+
+    <script>
+        // Lấy video stream từ camera
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(stream) {
+                var video = document.getElementById('videoElement');
+                video.srcObject = stream;
+            })
+            .catch(function(err) {
+                console.log('Error accessing webcam: ', err);
+            });
+
+        // Hàm chụp ảnh từ video
+        document.getElementById('captureButton').addEventListener('click', function() {
+            var video = document.getElementById('videoElement');
+            var canvas = document.getElementById('canvas');
+            var context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Lấy dữ liệu ảnh từ canvas
+            var imageData = canvas.toDataURL('image/jpeg');
+
+            // Gửi ảnh tới server Flask để phân loại
+            fetch('/predict-camera', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: imageData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hiển thị kết quả phân loại lên web
+                document.querySelector('.real-time-result p').textContent = data.result;
+            })
+            .catch(error => {
+                console.error('Error during fetch:', error);
+            });
+        });
+    </script>
 </body>
 </html>

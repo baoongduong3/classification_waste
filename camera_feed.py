@@ -1,7 +1,7 @@
 import os
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 import cv2
-import sqlite3
+
 import numpy as np
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.models import load_model
@@ -12,17 +12,7 @@ IMG_SIZE = (150, 150)
 
 # Mở camera
 cap = cv2.VideoCapture(0)
-# Kết nối và tạo bảng
-conn = sqlite3.connect('classification_data.db')
-cursor = conn.cursor()
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS classifications (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-        classification TEXT
-    )
-''')
-conn.commit()
+
 while True:
     ret, frame = cap.read()
     if not ret:
