@@ -5,67 +5,160 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rubbish Classification</title>
     <style>
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Background and Font */
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f7f6;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to bottom right, #283048, #859398);
             color: #333;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             height: 100vh;
-            margin: 0;
+            padding: 20px;
         }
+
+        /* Container Styling */
         .container {
             background-color: #ffffff;
-            padding: 20px 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
             text-align: center;
-            width: 400px;
+            max-width: 600px;
+            width: 100%;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
         }
+
+        .container:hover {
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Title Styling */
         h1 {
-            color: #5d9cec;
-            font-size: 24px;
-            margin-bottom: 10px;
+            font-size: 26px;
+            color: #283048;
+            margin-bottom: 20px;
+            font-weight: bold;
         }
+
+        /* Form Group */
         .form-group {
             margin: 20px 0;
         }
+
+        /* Input and Button Styling */
         input[type="file"] {
             display: block;
             margin: 10px auto;
-            padding: 5px;
+            padding: 8px;
+            font-size: 14px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
         }
+
         button {
-            background-color: #5d9cec;
+            background-color: #283048;
             color: #ffffff;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 20px;
             font-size: 16px;
-            border-radius: 5px;
+            font-weight: bold;
+            border-radius: 8px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: background-color 0.3s ease;
+            width: 100%;
         }
+
         button:hover {
-            background-color: #4a8acb;
+            background-color: #3c506d;
         }
+
+        /* Result Display Styling */
         .result {
             margin-top: 20px;
             padding: 15px;
-            background-color: #e1f5fe;
-            border-radius: 8px;
-            color: #31708f;
+            background-color: #f1f8ff;
+            border-radius: 10px;
+            color: #1a3e6a;
             font-weight: bold;
+            font-size: 16px;
         }
-        .real-time-result {
-            margin-top: 20px;
-            font-size: 14px;
-            color: #666;
-            font-style: italic;
-        }
+
+        /* Video Stream */
         video {
             max-width: 100%;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .capture-button {
+            margin-top: 15px;
+            background-color: #283048;
+            color: #ffffff;
+            border: none;
+            padding: 10px 15px;
+            font-size: 14px;
+            font-weight: bold;
             border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .capture-button:hover {
+            background-color: #3c506d;
+        }
+
+        /* Statistics and Data Table */
+        .stats-container {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .stats-container h2 {
+            color: #283048;
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #283048;
+            color: #ffffff;
+        }
+
+        /* Chart Styling */
+        #chartContainer {
+            height: 300px;
+            width: 100%;
             margin-top: 20px;
         }
     </style>
@@ -91,7 +184,7 @@
 
         <!-- Kết quả phân loại theo thời gian thực từ camera -->
         <div class="real-time-result">
-            <h2>Real-time Classification from Camera:</h2>
+            <h2 style="color:#283048; margin-bottom:10px;">Real-time Classification from Camera:</h2>
             <p>{{ latest_result }}</p>
         </div>
 
@@ -99,10 +192,38 @@
         <video id="videoElement" autoplay></video>
 
         <!-- Nút chụp ảnh và phân loại -->
-        <button id="captureButton">Capture and Classify</button>
+        <button id="captureButton" class="capture-button">Capture and Classify</button>
         <canvas id="canvas" style="display: none;"></canvas>
     </div>
 
+    <!-- Phần thống kê và chuẩn hóa dữ liệu -->
+    <div class="stats-container">
+        <h2>Data Statistics and Structured Results</h2>
+
+        <!-- Bảng thống kê dữ liệu -->
+        <table>
+            <tr>
+                <th>Category</th>
+                <th>Count</th>
+                <th>Percentage (%)</th>
+            </tr>
+            <tr>
+                <td>Recyclable Waste</td>
+                <td>{{ recyclable_count }}</td>
+                <td>{{ recyclable_percentage }}%</td>
+            </tr>
+            <tr>
+                <td>Non-Recyclable Waste</td>
+                <td>{{ non_recyclable_count }}</td>
+                <td>{{ non_recyclable_percentage }}%</td>
+            </tr>
+        </table>
+
+        <!-- Biểu đồ thống kê dạng tròn -->
+        <div id="chartContainer"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Lấy video stream từ camera
         navigator.mediaDevices.getUserMedia({ video: true })
@@ -143,6 +264,64 @@
                 console.error('Error during fetch:', error);
             });
         });
+
+        // Biểu đồ Pie Chart cho thống kê dữ liệu
+        var ctx = document.getElementById('chartContainer').getContext('2d');
+        var chart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['Recyclable Waste', 'Non-Recyclable Waste'],
+                datasets: [{
+                    label: 'Waste Classification Statistics',
+                    data: [{{ recyclable_count }}, {{ non_recyclable_count }}],
+                    backgroundColor: ['#1aaf5d', '#d9534f'],
+                    hoverBackgroundColor: ['#13a34b', '#c23b32']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
     </script>
+<script>
+    // Chụp ảnh từ video và gửi tới server
+    document.getElementById('captureButton').addEventListener('click', function() {
+        var video = document.getElementById('videoElement');
+        var canvas = document.getElementById('canvas');
+        var context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        var imageData = canvas.toDataURL('image/jpeg');
+
+        fetch('/predict-camera', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ image: imageData })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.querySelector('.real-time-result p').textContent = data.result;
+
+            // Cập nhật thống kê
+            document.querySelector('table tr:nth-child(2) td:nth-child(2)').textContent = data.statistics.Recyclable || 0;
+            document.querySelector('table tr:nth-child(2) td:nth-child(3)').textContent = ((data.statistics.Recyclable || 0) / (data.statistics.Recyclable + data.statistics["Non-Recyclable"] || 0) * 100).toFixed(2) + '%';
+
+            document.querySelector('table tr:nth-child(3) td:nth-child(2)').textContent = data.statistics["Non-Recyclable"] || 0;
+            document.querySelector('table tr:nth-child(3) td:nth-child(3)').textContent = ((data.statistics["Non-Recyclable"] || 0) / (data.statistics.Recyclable + data.statistics["Non-Recyclable"] || 0) * 100).toFixed(2) + '%';
+        })
+        .catch(error => console.error('Error during fetch:', error));
+    });
+</script>
+
 </body>
+
 </html>
