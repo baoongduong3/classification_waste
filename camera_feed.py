@@ -1,11 +1,9 @@
 import os
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 import cv2
-
 import numpy as np
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.models import load_model
-
 # Tải mô hình đã huấn luyện
 model = load_model('rubbish_classification_model.h5')
 IMG_SIZE = (150, 150)
@@ -29,7 +27,9 @@ while True:
 
     # Hiển thị phân loại lên màn hình
     cv2.putText(frame, f'Classification: {class_label}', (10, 30),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, lineType=cv2.LINE_AA)
+
+    # Hiển thị camera feed với kết quả phân loại
     cv2.imshow('Camera Feed', frame)
 
     # Thoát nếu nhấn phím 'q'

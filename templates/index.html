@@ -100,21 +100,12 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
 
-        .capture-button {
-            margin-top: 15px;
-            background-color: #283048;
-            color: #ffffff;
-            border: none;
-            padding: 10px 15px;
-            font-size: 14px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        .capture-button:hover {
-            background-color: #3c506d;
+        /* Button container styling */
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 20px;
         }
 
         /* Statistics and Data Table */
@@ -191,9 +182,11 @@
         <!-- Video stream from camera -->
         <video id="videoElement" autoplay></video>
 
-        <!-- Nút chụp ảnh và phân loại -->
-        <button id="captureButton" class="capture-button">Capture and Classify</button>
-        <canvas id="canvas" style="display: none;"></canvas>
+        <!-- Buttons for controlling camera -->
+        <div class="button-container">
+            <button id="stopCameraButton">Stop Camera</button>
+            <button id="startCameraButton">Start Camera</button>
+        </div>
     </div>
 
     <!-- Phần thống kê và chuẩn hóa dữ liệu -->
@@ -226,28 +219,45 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Lấy video stream từ camera
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(function(stream) {
-                var video = document.getElementById('videoElement');
-                video.srcObject = stream;
-            })
-            .catch(function(err) {
-                console.log('Error accessing webcam: ', err);
-            });
+        let stream;  // Declare stream globally so we can stop or restart it later
 
-        // Hàm chụp ảnh từ video
-        document.getElementById('captureButton').addEventListener('click', function() {
+        function startCamera() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(s) {
+                    stream = s;
+                    var video = document.getElementById('videoElement');
+                    video.srcObject = stream;
+                })
+                .catch(function(err) {
+                    console.log('Error accessing webcam: ', err);
+                });
+        }
+
+        // Stop camera function
+        document.getElementById('stopCameraButton').addEventListener('click', function() {
+            if (stream) {
+                let tracks = stream.getTracks();
+                tracks.forEach(track => track.stop());  // Dừng tất cả các track trong stream
+                document.getElementById('videoElement').srcObject = null;  // Ngắt kết nối video
+            }
+        });
+
+        // Start camera function
+        document.getElementById('startCameraButton').addEventListener('click', function() {
+            startCamera();  // Gọi lại hàm để bắt đầu camera
+        });
+
+        // Tự động phân loại mỗi giây
+        setInterval(function() {
             var video = document.getElementById('videoElement');
-            var canvas = document.getElementById('canvas');
+            var canvas = document.createElement('canvas');
             var context = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            // Lấy dữ liệu ảnh từ canvas
             var imageData = canvas.toDataURL('image/jpeg');
 
-            // Gửi ảnh tới server Flask để phân loại
             fetch('/predict-camera', {
                 method: 'POST',
                 headers: {
@@ -257,71 +267,17 @@
             })
             .then(response => response.json())
             .then(data => {
-                // Hiển thị kết quả phân loại lên web
                 document.querySelector('.real-time-result p').textContent = data.result;
+
+                // Cập nhật thống kê
+                document.querySelector('table tr:nth-child(2) td:nth-child(2)').textContent = data.statistics.Recyclable || 0;
+                document.querySelector('table tr:nth-child(2) td:nth-child(3)').textContent = ((data.statistics.Recyclable || 0) / (data.statistics.Recyclable + data.statistics["Non-Recyclable"] || 0) * 100).toFixed(2) + '%';
+
+                document.querySelector('table tr:nth-child(3) td:nth-child(2)').textContent = data.statistics["Non-Recyclable"] || 0;
+                document.querySelector('table tr:nth-child(3) td:nth-child(3)').textContent = ((data.statistics["Non-Recyclable"] || 0) / (data.statistics.Recyclable + data.statistics["Non-Recyclable"] || 0) * 100).toFixed(2) + '%';
             })
-            .catch(error => {
-                console.error('Error during fetch:', error);
-            });
-        });
-
-        // Biểu đồ Pie Chart cho thống kê dữ liệu
-        var ctx = document.getElementById('chartContainer').getContext('2d');
-        var chart = new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: ['Recyclable Waste', 'Non-Recyclable Waste'],
-                datasets: [{
-                    label: 'Waste Classification Statistics',
-                    data: [{{ recyclable_count }}, {{ non_recyclable_count }}],
-                    backgroundColor: ['#1aaf5d', '#d9534f'],
-                    hoverBackgroundColor: ['#13a34b', '#c23b32']
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                    }
-                }
-            }
-        });
+            .catch(error => console.error('Error during fetch:', error));
+        }, 1000);  // Chụp mỗi giây
     </script>
-<script>
-    // Chụp ảnh từ video và gửi tới server
-    document.getElementById('captureButton').addEventListener('click', function() {
-        var video = document.getElementById('videoElement');
-        var canvas = document.getElementById('canvas');
-        var context = canvas.getContext('2d');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        var imageData = canvas.toDataURL('image/jpeg');
-
-        fetch('/predict-camera', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ image: imageData })
-        })
-        .then(response => response.json())
-        .then(data => {
-            document.querySelector('.real-time-result p').textContent = data.result;
-
-            // Cập nhật thống kê
-            document.querySelector('table tr:nth-child(2) td:nth-child(2)').textContent = data.statistics.Recyclable || 0;
-            document.querySelector('table tr:nth-child(2) td:nth-child(3)').textContent = ((data.statistics.Recyclable || 0) / (data.statistics.Recyclable + data.statistics["Non-Recyclable"] || 0) * 100).toFixed(2) + '%';
-
-            document.querySelector('table tr:nth-child(3) td:nth-child(2)').textContent = data.statistics["Non-Recyclable"] || 0;
-            document.querySelector('table tr:nth-child(3) td:nth-child(3)').textContent = ((data.statistics["Non-Recyclable"] || 0) / (data.statistics.Recyclable + data.statistics["Non-Recyclable"] || 0) * 100).toFixed(2) + '%';
-        })
-        .catch(error => console.error('Error during fetch:', error));
-    });
-</script>
-
 </body>
-
 </html>
