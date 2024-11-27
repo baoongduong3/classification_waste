@@ -1,9 +1,17 @@
 import os
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+import datetime
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.callbacks import TensorBoard
+
+# Tạo thư mục logs với timestamp
+log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+os.makedirs(log_dir, exist_ok=True)
+
+# Khai báo TensorBoard callback
+tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
 # Đường dẫn đến dữ liệu
 data_dir = r'D:\pythonwork\training_project\DATA FOR TRAINING'
@@ -45,13 +53,14 @@ model = Sequential([
 # Biên dịch mô hình
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-# Huấn luyện mô hình
+# Huấn luyện mô hình với TensorBoard callback
 history = model.fit(
     train_generator,
     steps_per_epoch=train_generator.samples // train_generator.batch_size,
     validation_data=validation_generator,
     validation_steps=validation_generator.samples // validation_generator.batch_size,
-    epochs=10
+    epochs=10,
+    callbacks=[tensorboard_callback]  # Thêm callback tại đây
 )
 
 # Lưu mô hình đã huấn luyện
