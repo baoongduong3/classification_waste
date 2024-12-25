@@ -3,21 +3,23 @@ os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 import base64
 import sqlite3
 from io import BytesIO
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template, jsonify, redirect, url_for, session, flash
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array, load_img
 import numpy as np
 import cv2
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
+app.secret_key = 'your_secret_key'  # Đặt secret key cho session
 
 # Tải mô hình đã huấn luyện
 model = load_model('rubbish_classification_model.h5')
 IMG_SIZE = (150, 150)
 
 
-# Kết nối và tạo bảng lưu trữ kết quả
+# Kết nối và tạo bảng lưu trữ kết quả và người dùng
 def init_db():
     conn = sqlite3.connect('rubbish_classification.db')
     cursor = conn.cursor()
@@ -26,6 +28,14 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             label TEXT,
             timestamp TEXT
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            password TEXT,
+            created_at TEXT
         )
     ''')
     conn.commit()
@@ -58,6 +68,9 @@ def get_statistics():
 
 @app.route('/')
 def home():
+    if 'user_id' not in session:
+        flash('Vui lòng đăng nhập để truy cập trang chính.', 'error')
+        return redirect(url_for('login'))
     stats = get_statistics()
     recyclable_count = stats.get('Recyclable', 0)
     non_recyclable_count = stats.get('Non-Recyclable', 0)
@@ -73,6 +86,71 @@ def home():
         non_recyclable_percentage=non_recyclable_percentage
     )
 
+
+# Route để xử lý đăng ký người dùng
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256', salt_length=12)
+
+        conn = sqlite3.connect('rubbish_classification.db')
+        cursor = conn.cursor()
+        try:
+            cursor.execute('INSERT INTO users (username, password, created_at) VALUES (?, ?, ?)',
+                           (username, hashed_password, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+            conn.commit()
+            flash('Registration successful! Please log in.', 'success')
+            return redirect(url_for('login'))
+        except sqlite3.IntegrityError:
+            flash('Username already exists. Please choose another one.', 'error')
+        finally:
+            conn.close()
+
+    return render_template('register.html')
+
+
+# Route để xử lý đăng nhập người dùng
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        conn = sqlite3.connect('rubbish_classification.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+        user = cursor.fetchone()
+        conn.close()
+
+        if user and check_password_hash(user[2], password):
+            session['user_id'] = user[0]
+            session['username'] = user[1]
+            flash('Login successful!', 'success')
+            return redirect(url_for('home'))
+        else:
+            flash('Invalid username or password.', 'error')
+
+    return render_template('login.html')
+
+
+# Route để xử lý đăng xuất
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('login'))
+
+
+# Route để xem hồ sơ cá nhân
+@app.route('/profile')
+def profile():
+    if 'user_id' not in session:
+        flash('Please log in to access your profile.', 'error')
+        return redirect(url_for('login'))
+
+    return render_template('profile.html', username=session['username'])
 
 # Route để nhận dạng ảnh upload
 @app.route('/predict', methods=['POST'])
@@ -139,7 +217,5 @@ def predict_camera():
         'result': class_label,
         'statistics': stats
     })
-
-
 if __name__ == '__main__':
     app.run(debug=True)
