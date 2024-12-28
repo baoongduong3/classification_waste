@@ -23,6 +23,37 @@ IMG_SIZE = (150, 150)
 def init_db():
     conn = sqlite3.connect('rubbish_classification.db')
     cursor = conn.cursor()
+
+    # Kiểm tra xem bảng users có cột email không
+    cursor.execute("PRAGMA table_info(users)")
+    columns = [info[1] for info in cursor.fetchall()]
+
+    if 'email' not in columns or 'full_name' not in columns:
+        print("Updating 'users' table to include 'full_name' and 'email' columns.")
+
+        # Tạo bảng tạm với cấu trúc mới
+        cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS users_temp (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        username TEXT UNIQUE,
+                        password TEXT,
+                        created_at TEXT,
+                        full_name TEXT DEFAULT 'Unnamed User',
+                        email TEXT UNIQUE DEFAULT 'unknown@example.com'
+                    )
+                ''')
+
+        # Di chuyển dữ liệu từ bảng cũ sang bảng tạm
+        cursor.execute('''
+                    INSERT INTO users_temp (id, username, password, created_at)
+                    SELECT id, username, password, created_at FROM users
+                ''')
+
+        # Xóa bảng cũ và đổi tên bảng tạm thành users
+        cursor.execute('DROP TABLE users')
+        cursor.execute('ALTER TABLE users_temp RENAME TO users')
+
+    # Tạo bảng classification_logs nếu chưa tồn tại
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS classification_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,14 +61,7 @@ def init_db():
             timestamp TEXT
         )
     ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
-            password TEXT,
-            created_at TEXT
-        )
-    ''')
+
     conn.commit()
     conn.close()
 
@@ -91,24 +115,39 @@ def home():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
+        full_name = request.form['full_name']
+        email = request.form['email']
         username = request.form['username']
         password = request.form['password']
+        confirm_password = request.form['confirm_password']
+
+        # Kiểm tra nhập lại password
+        if password != confirm_password:
+            flash('Passwords do not match. Please try again.', 'error')
+            return redirect(url_for('register'))
+
+        # Hash password
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256', salt_length=12)
 
+        # Kết nối cơ sở dữ liệu
         conn = sqlite3.connect('rubbish_classification.db')
         cursor = conn.cursor()
         try:
-            cursor.execute('INSERT INTO users (username, password, created_at) VALUES (?, ?, ?)',
-                           (username, hashed_password, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+            # Thêm dữ liệu người dùng mới
+            cursor.execute(
+                'INSERT INTO users (full_name, email, username, password, created_at) VALUES (?, ?, ?, ?, ?)',
+                (full_name, email, username, hashed_password, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            )
             conn.commit()
             flash('Registration successful! Please log in.', 'success')
             return redirect(url_for('login'))
         except sqlite3.IntegrityError:
-            flash('Username already exists. Please choose another one.', 'error')
+            flash('Username or Email already exists. Please choose another one.', 'error')
         finally:
             conn.close()
 
     return render_template('register.html')
+
 
 
 # Route để xử lý đăng nhập người dùng
@@ -149,8 +188,22 @@ def profile():
     if 'user_id' not in session:
         flash('Please log in to access your profile.', 'error')
         return redirect(url_for('login'))
+    conn = sqlite3.connect('rubbish_classification.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT username, full_name, email FROM users WHERE id = ?', (session['user_id'],))
+    user = cursor.fetchone()
+    conn.close()
 
-    return render_template('profile.html', username=session['username'])
+    if user:
+        return render_template(
+            'profile.html',
+            username=user[0],
+            full_name=user[1],
+            email=user[2]
+        )
+    else:
+        flash('User not found.', 'error')
+        return redirect(url_for('login'))
 
 # Route để nhận dạng ảnh upload
 @app.route('/predict', methods=['POST'])

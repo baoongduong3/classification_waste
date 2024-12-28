@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rubbish Classification</title>
+		 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         /* Reset */
         * {
@@ -22,23 +24,63 @@
             align-items: center;
             height: 100vh;
             padding: 20px;
+            overflow-y: auto;
         }
+				 /* Navbar Styling */
+    .navbar {
+        background-color: #007bff;
+        padding: 5px 20px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 1000;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        color: white;
+    }
 
-        /* Container Styling */
-        .container {
+    .navbar .logo {
+        font-size: 18px;
+        font-weight: bold;
+        color: white;
+    }
+
+    .navbar a {
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+    }
+
+    .navbar a:hover {
+        color: #ffd700;
+    }
+
+    .profile-icon {
+        font-size: 20px;
+        color: white;
+        transition: color 0.3s ease, transform 0.2s ease;
+    }
+
+    .profile-icon:hover {
+        color: #ffd700;
+        transform: scale(1.1);
+    }
+
+
+
+        /* Full Page Container Styling */
+        .full-container {
             background-color: #ffffff;
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
             text-align: center;
-            max-width: 600px;
+            max-width: 1200px;
             width: 100%;
-            margin-bottom: 30px;
-            transition: all 0.3s ease;
-        }
-
-        .container:hover {
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+            margin: 20px;
         }
 
         /* Title Styling */
@@ -49,80 +91,52 @@
             font-weight: bold;
         }
 
-        /* Form Group */
-        .form-group {
-            margin: 20px 0;
+        /* Video Stream */
+        .video-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
         }
 
-        /* Input and Button Styling */
-        input[type="file"] {
-            display: block;
-            margin: 10px auto;
-            padding: 8px;
-            font-size: 14px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
+        .camera-block {
+            text-align: center;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            flex: 1 1 calc(20% - 10px);
+            max-width: calc(20% - 10px);
+        }
+
+        video {
+            width: 100%;
+            height: auto;
+            max-width: 300px;
+            max-height: 200px;
+            border-radius: 10px;
         }
 
         button {
             background-color: #283048;
             color: #ffffff;
             border: none;
-            padding: 12px 20px;
-            font-size: 16px;
-            font-weight: bold;
+            padding: 10px 15px;
+            font-size: 14px;
             border-radius: 8px;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            width: 100%;
         }
 
         button:hover {
             background-color: #3c506d;
         }
 
-        /* Result Display Styling */
         .result {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #f1f8ff;
-            border-radius: 10px;
-            color: #1a3e6a;
-            font-weight: bold;
+            margin-top: 10px;
             font-size: 16px;
-        }
-
-        /* Video Stream */
-        video {
-            max-width: 100%;
-            border-radius: 10px;
-            margin-top: 20px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Button container styling */
-        .button-container {
-            display: flex;
-            justify-content: space-between;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        /* Statistics and Data Table */
-        .stats-container {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-            max-width: 800px;
-            width: 100%;
-        }
-
-        .stats-container h2 {
-            color: #283048;
-            font-size: 24px;
-            margin-bottom: 20px;
+            color: #1a3e6a;
             font-weight: bold;
         }
 
@@ -145,17 +159,20 @@
             background-color: #283048;
             color: #ffffff;
         }
-
-        /* Chart Styling */
-        #chartContainer {
-            height: 300px;
-            width: 100%;
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
-    <div class="container">
+<!-- Thanh điều hướng -->
+    <div class="navbar d-flex justify-content-between align-items-center">
+        <div>
+            <!-- Icon chuyển hướng đến profile -->
+            <a href="/profile" class="profile-icon">
+                <i class="bi bi-person-circle"></i> <!-- Biểu tượng icon profile -->
+                <span class="profile-text">Your Profile!</span>
+            </a>
+        </div>
+    </div>
+    <div class="full-container">
         <h1>Rubbish Classification</h1>
 
         <!-- Form upload ảnh để phân loại -->
@@ -166,118 +183,182 @@
             </form>
         </div>
 
-        <!-- Kết quả phân loại từ ảnh upload -->
+         <!-- Kết quả phân loại từ ảnh upload -->
         {% if result %}
             <div class="result">
                 Result from Uploaded Image: {{ result }}
             </div>
         {% endif %}
 
-        <!-- Kết quả phân loại theo thời gian thực từ camera -->
-        <div class="real-time-result">
-            <h2 style="color:#283048; margin-bottom:10px;">Real-time Classification from Camera:</h2>
-            <p>{{ latest_result }}</p>
+        <!-- Video Streams and Results -->
+        <div class="video-container" id="videoContainer"></div>
+
+        <!-- Camera Controls -->
+        <div class="camera-controls">
+            <select id="cameraSelect">
+                <option value="">Select Camera</option>
+            </select>
+            <div>
+                <button id="startCameraButton">Start Camera</button>
+                <button id="startAllCamerasButton">Start All Cameras</button>
+                <button id="stopAllCamerasButton">Stop All Cameras</button>
+            </div>
         </div>
 
-        <!-- Video stream from camera -->
-        <video id="videoElement" autoplay></video>
+        <!-- Phần thống kê và chuẩn hóa dữ liệu -->
+        <div class="stats-container">
+            <h2>Data Statistics and Structured Results</h2>
 
-        <!-- Buttons for controlling camera -->
-        <div class="button-container">
-            <button id="stopCameraButton">Stop Camera</button>
-            <button id="startCameraButton">Start Camera</button>
+            <!-- Bảng thống kê dữ liệu -->
+            <table>
+                <tr>
+                    <th>Category</th>
+                    <th>Count</th>
+                    <th>Percentage (%)</th>
+                </tr>
+                <tr>
+                    <td>Recyclable Waste</td>
+                    <td>735</td>
+                    <td>51.91%</td>
+                </tr>
+                <tr>
+                    <td>Non-Recyclable Waste</td>
+                    <td>681</td>
+                    <td>48.09%</td>
+                </tr>
+            </table>
         </div>
     </div>
 
-    <!-- Phần thống kê và chuẩn hóa dữ liệu -->
-    <div class="stats-container">
-        <h2>Data Statistics and Structured Results</h2>
-
-        <!-- Bảng thống kê dữ liệu -->
-        <table>
-            <tr>
-                <th>Category</th>
-                <th>Count</th>
-                <th>Percentage (%)</th>
-            </tr>
-            <tr>
-                <td>Recyclable Waste</td>
-                <td>{{ recyclable_count }}</td>
-                <td>{{ recyclable_percentage }}%</td>
-            </tr>
-            <tr>
-                <td>Non-Recyclable Waste</td>
-                <td>{{ non_recyclable_count }}</td>
-                <td>{{ non_recyclable_percentage }}%</td>
-            </tr>
-        </table>
-
-        <!-- Biểu đồ thống kê dạng tròn -->
-        <div id="chartContainer"></div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // Lấy video stream từ camera
-        let stream;  // Declare stream globally so we can stop or restart it later
+        let streams = {}; // Lưu trữ streams theo deviceId
+        let videoContainer = document.getElementById('videoContainer');
+        let cameraSelect = document.getElementById('cameraSelect');
+        let cameraLabels = {}; // Lưu tên (label) camera theo deviceId
 
-        function startCamera() {
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(function(s) {
-                    stream = s;
-                    var video = document.getElementById('videoElement');
-                    video.srcObject = stream;
+        // Lấy danh sách tất cả các thiết bị video (camera)
+        navigator.mediaDevices.enumerateDevices()
+            .then(devices => {
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                videoDevices.forEach(device => {
+                    let option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.textContent = device.label || `Camera ${cameraSelect.length + 1}`;
+                    cameraSelect.appendChild(option);
+
+                    // Lưu label của camera
+                    cameraLabels[device.deviceId] = device.label || `Camera ${cameraSelect.length}`;
+                });
+            })
+            .catch(err => console.error('Error accessing devices: ', err));
+
+        // Mở camera với deviceId được chỉ định
+        function startCamera(deviceId) {
+            if (streams[deviceId]) {
+                alert('Camera này đã được mở.');
+                return;
+            }
+
+            navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: deviceId } } })
+                .then(function(stream) {
+                    streams[deviceId] = stream;
+
+                    // Tạo khối hiển thị camera và kết quả riêng
+                    let cameraBlock = document.createElement('div');
+                    cameraBlock.className = 'camera-block';
+
+                    let videoElement = document.createElement('video');
+                    videoElement.srcObject = stream;
+                    videoElement.autoplay = true;
+                    videoElement.dataset.deviceId = deviceId;
+
+                    let resultElement = document.createElement('div');
+                    resultElement.className = 'result';
+                    resultElement.id = `result-${deviceId}`;
+                    resultElement.textContent = 'Awaiting result...';
+
+                    let stopButton = document.createElement('button');
+                    stopButton.textContent = `Stop Camera: ${cameraLabels[deviceId]}`;
+                    stopButton.addEventListener('click', function() {
+                        stopCamera(deviceId);
+                    });
+
+                    cameraBlock.appendChild(videoElement);
+                    cameraBlock.appendChild(resultElement);
+                    cameraBlock.appendChild(stopButton);
+
+                    videoContainer.appendChild(cameraBlock);
+
+                    setInterval(() => classifyFrame(videoElement, deviceId), 1000); // Phân loại theo thời gian thực mỗi 1 giây
                 })
                 .catch(function(err) {
                     console.log('Error accessing webcam: ', err);
                 });
         }
 
-        // Stop camera function
-        document.getElementById('stopCameraButton').addEventListener('click', function() {
-            if (stream) {
-                let tracks = stream.getTracks();
-                tracks.forEach(track => track.stop());  // Dừng tất cả các track trong stream
-                document.getElementById('videoElement').srcObject = null;  // Ngắt kết nối video
-            }
-        });
+        // Phân loại một khung hình từ video
+        function classifyFrame(videoElement, deviceId) {
+            let canvas = document.createElement('canvas');
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            let context = canvas.getContext('2d');
+            context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
 
-        // Start camera function
-        document.getElementById('startCameraButton').addEventListener('click', function() {
-            startCamera();  // Gọi lại hàm để bắt đầu camera
-        });
-
-        // Tự động phân loại mỗi giây
-        setInterval(function() {
-            var video = document.getElementById('videoElement');
-            var canvas = document.createElement('canvas');
-            var context = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            var imageData = canvas.toDataURL('image/jpeg');
+            let imageData = canvas.toDataURL('image/jpeg');
 
             fetch('/predict-camera', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ image: imageData })
             })
-            .then(response => response.json())
-            .then(data => {
-                document.querySelector('.real-time-result p').textContent = data.result;
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById(`result-${deviceId}`).textContent = data.result; // Cập nhật kết quả cho camera tương ứng
+                })
+                .catch(error => console.error('Error during fetch:', error));
+        }
 
-                // Cập nhật thống kê
-                document.querySelector('table tr:nth-child(2) td:nth-child(2)').textContent = data.statistics.Recyclable || 0;
-                document.querySelector('table tr:nth-child(2) td:nth-child(3)').textContent = ((data.statistics.Recyclable || 0) / (data.statistics.Recyclable + data.statistics["Non-Recyclable"] || 0) * 100).toFixed(2) + '%';
+        // Dừng camera với deviceId được chỉ định
+        function stopCamera(deviceId) {
+            if (streams[deviceId]) {
+                let tracks = streams[deviceId].getTracks();
+                tracks.forEach(track => track.stop());
+                delete streams[deviceId];
 
-                document.querySelector('table tr:nth-child(3) td:nth-child(2)').textContent = data.statistics["Non-Recyclable"] || 0;
-                document.querySelector('table tr:nth-child(3) td:nth-child(3)').textContent = ((data.statistics["Non-Recyclable"] || 0) / (data.statistics.Recyclable + data.statistics["Non-Recyclable"] || 0) * 100).toFixed(2) + '%';
-            })
-            .catch(error => console.error('Error during fetch:', error));
-        }, 1000);  // Chụp mỗi giây
+                let cameraBlock = document.querySelector(`[data-device-id='${deviceId}']`).parentElement;
+                cameraBlock.remove();
+            } else {
+                alert('Camera này chưa được mở.');
+            }
+        }
+
+        // Dừng tất cả camera
+        function stopAllCameras() {
+            Object.keys(streams).forEach(deviceId => stopCamera(deviceId));
+        }
+
+        // Event listener cho các nút điều khiển
+        document.getElementById('startCameraButton').addEventListener('click', function() {
+            let selectedCamera = cameraSelect.value;
+            if (selectedCamera) {
+                startCamera(selectedCamera);
+            } else {
+                alert('Vui lòng chọn một camera');
+            }
+        });
+
+        document.getElementById('startAllCamerasButton').addEventListener('click', function() {
+            navigator.mediaDevices.enumerateDevices()
+                .then(devices => {
+                    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                    videoDevices.forEach(device => {
+                        startCamera(device.deviceId);
+                    });
+                });
+        });
+
+        document.getElementById('stopAllCamerasButton').addEventListener('click', stopAllCameras);
+
     </script>
 </body>
 </html>
